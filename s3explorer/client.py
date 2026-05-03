@@ -239,6 +239,28 @@ class LocalS3Client:
         """
         self._client.put_object(Bucket=bucket, Key=key, Body=data)
 
+    def copy_object(self, src_bucket: str, src_key: str, dst_bucket: str, dst_key: str) -> None:
+        """Copy an object from one bucket/prefix to another.
+
+        Parameters
+        ----------
+        src_bucket:
+            Source bucket name.
+        src_key:
+            Source object key.
+        dst_bucket:
+            Destination bucket name.
+        dst_key:
+            Destination object key.
+        """
+        data = self.download_object(src_bucket, src_key)
+        # Ensure destination bucket exists
+        try:
+            self._client.head_object(Bucket=dst_bucket, Key=dst_key)
+        except Exception:
+            pass  # Bucket might not exist, but put_object will create it
+        self._client.put_object(Bucket=dst_bucket, Key=dst_key, Body=data)
+
 
 # ---------------------------------------------------------------------------
 # Mock client — identical interface, no Localstack required

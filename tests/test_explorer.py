@@ -78,6 +78,15 @@ class TestMockClient:
         assert len(buckets) == 1
         assert buckets[0].name == "my-bucket"
 
+    def test_copy_object(self):
+        mock = MockLocalS3Client()
+        client = LocalS3Client(mock)
+        # Copy an object between buckets
+        client.copy_object("dev-data", "config/settings.json", "dev-data", "backup/settings.json")
+        # Verify the copy exists
+        data = client.download_object("dev-data", "backup/settings.json")
+        assert data == b'{"env":"local","debug":true}'
+
 
 # ---------------------------------------------------------------------------
 # Explorer tests
@@ -208,3 +217,30 @@ class TestParsePath:
         bucket, key = _parse_path("s3://my-bucket/data/file.json")
         assert bucket == "my-bucket"
         assert key == "data/file.json"
+
+
+# ---------------------------------------------------------------------------
+# Copy tests
+# ---------------------------------------------------------------------------
+
+class TestCopy:
+    def _explorer(self):
+        return Explorer(LocalS3Client(MockLocalS3Client()))
+
+    def test_copy_single_object(self):
+        exp = self._explorer()
+        # Copy a single object
+        exp.copy("dev-data", "config/settings.json", "dev-data", "backup/settings.json")
+        # Verify the copy exists
+        data = exp.client.download_object("dev-data", "backup/settings.json")
+        assert data == b'{"env":"local","debug":true}'
+
+    def test_copy_prefix(self):
+        exp = self._explorer()
+        # Copy all objects under raw/ prefix
+        copied = exp.copy_prefix("dev-data", "raw/", "dev-data", "backup/raw/")
+        assert len(copied) == 3
+        # Verify the copies exist
+        for key in copied:
+            data = exp.client.download_object("dev-data", f"backup/raw/{key}")
+            assert len(data) > 0
