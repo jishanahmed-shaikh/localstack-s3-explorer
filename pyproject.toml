@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "localstack-s3-explorer"
+version = "1.0.0"
+description = "CLI and TUI to explore files in a local S3 bucket (Localstack) without needing the AWS CLI"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Jishanahmed AR Shaikh", email = "jishanahmedshaikh@gmail.com" }]
+keywords = ["localstack", "s3", "explorer", "local", "development", "aws", "cli", "tui"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Utilities",
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.optional-dependencies]
+aws = ["boto3>=1.26"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+s3explorer = "s3explorer.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/jishanahmed-shaikh/localstack-s3-explorer"
+Issues   = "https://github.com/jishanahmed-shaikh/localstack-s3-explorer/issues"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts   = "-v --tb=short"
