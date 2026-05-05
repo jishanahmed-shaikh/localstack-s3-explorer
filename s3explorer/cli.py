@@ -108,6 +108,9 @@ def main(argv=None) -> None:
     ls_p = sub.add_parser("ls", help="List buckets or objects")
     ls_p.add_argument("path", nargs="?", default="",
                       help="bucket or bucket/prefix to list")
+    ls_p.add_argument("--output-format", "-f", default="default",
+                      choices=["default", "table"],
+                      help="Output format: 'default' or 'table' (default: default)")
 
     # get
     get_p = sub.add_parser("get", help="Download an object")
@@ -163,6 +166,23 @@ def main(argv=None) -> None:
                     "folders": folders,
                     "objects": [{"key": o.key, "size": o.size, "last_modified": o.last_modified} for o in objects],
                 }))
+            elif getattr(args, "output_format", "default") == "table" and objects:
+                # Table format output
+                # Compute column widths
+                key_width = max(len("Key"), max(len(o.key) for o in objects))
+                size_width = max(len("Size"), max(len(o.size_human()) for o in objects))
+                date_width = max(len("Last Modified"), max(len(o.last_modified) for o in objects))
+
+                # Print header
+                header = f"  {{:<{key_width}}}  {{:<{size_width}}}  {{:<{date_width}}}"
+                print()
+                print(header.format("Key", "Size", "Last Modified"))
+                print(header.format("─" * key_width, "─" * size_width, "─" * date_width))
+
+                # Print objects
+                for o in objects:
+                    print(header.format(o.key, o.size_human(), o.last_modified))
+                print()
             else:
                 print()
                 for f in folders:
