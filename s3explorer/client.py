@@ -239,6 +239,32 @@ class LocalS3Client:
         """
         self._client.put_object(Bucket=bucket, Key=key, Body=data)
 
+    def copy_object(self, src_bucket: str, src_key: str, dst_bucket: str, dst_key: str) -> None:
+        """Copy an object from one bucket/prefix to another.
+
+        Parameters
+        ----------
+        src_bucket:
+            Source bucket name.
+        src_key:
+            Source object key.
+        dst_bucket:
+            Destination bucket name.
+        dst_key:
+            Destination object key.
+        """
+        try:
+            self._client.copy_object(
+                Bucket=dst_bucket,
+                Key=dst_key,
+                CopySource={"Bucket": src_bucket, "Key": src_key},
+                MetadataDirective="COPY",
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to copy s3://{src_bucket}/{src_key} to s3://{dst_bucket}/{dst_key}: {exc}"
+            ) from exc
+
 
 # ---------------------------------------------------------------------------
 # Mock client — identical interface, no Localstack required

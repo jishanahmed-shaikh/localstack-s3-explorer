@@ -224,3 +224,66 @@ class Explorer:
             text_part = "".join(chr(b) if 32 <= b < 127 else "." for b in chunk)
             lines.append(f"  {i:04x}  {hex_part:<48}  {text_part}")
         return "\n".join(lines)
+
+    # ------------------------------------------------------------------
+    # Copy
+    # ------------------------------------------------------------------
+
+    def copy(
+        self,
+        src_bucket: str,
+        src_key: str,
+        dst_bucket: str,
+        dst_key: str,
+    ) -> None:
+        """Copy an object from one bucket/prefix to another.
+
+        Parameters
+        ----------
+        src_bucket:
+            Source bucket name.
+        src_key:
+            Source object key.
+        dst_bucket:
+            Destination bucket name.
+        dst_key:
+            Destination object key.
+        """
+        self.client.copy_object(src_bucket, src_key, dst_bucket, dst_key)
+
+    def copy_prefix(
+        self,
+        src_bucket: str,
+        src_prefix: str,
+        dst_bucket: str,
+        dst_prefix: str = "",
+    ) -> List[str]:
+        """Copy all objects under a prefix to another bucket.
+
+        Parameters
+        ----------
+        src_bucket:
+            Source bucket name.
+        src_prefix:
+            Source key prefix to copy.
+        dst_bucket:
+            Destination bucket name.
+        dst_prefix:
+            Destination prefix (appended to each copied object's key).
+
+        Returns
+        -------
+        List[str]
+            List of destination keys that were copied.
+        """
+        # List all objects recursively (no delimiter)
+        objects, _ = self.client.list_objects(src_bucket, prefix=src_prefix, delimiter="")
+        copied = []
+        for obj in objects:
+            if not obj.is_folder:
+                # Compute destination key
+                rel_key = obj.key[len(src_prefix):]
+                new_dst_key = dst_prefix + rel_key
+                self.copy(src_bucket, obj.key, dst_bucket, new_dst_key)
+                copied.append(new_dst_key)
+        return copied

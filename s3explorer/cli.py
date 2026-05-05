@@ -134,6 +134,13 @@ def main(argv=None) -> None:
     srch_p.add_argument("query", help="Search query (case-insensitive substring)")
     srch_p.add_argument("--prefix", default="", help="Limit search to this prefix")
 
+    # cp
+    cp_p = sub.add_parser("cp", help="Copy objects between buckets")
+    cp_p.add_argument("source", help="source bucket/key or bucket/prefix")
+    cp_p.add_argument("destination", help="destination bucket/key or bucket/prefix")
+    cp_p.add_argument("--recursive", "-r", action="store_true",
+                      help="Copy all objects under a prefix")
+
     args = parser.parse_args(argv)
     use_color = sys.stdout.isatty() and not args.json
 
@@ -237,6 +244,31 @@ def main(argv=None) -> None:
                 r = _RESET if use_color else ""
                 print(f"  {g}{o.key}{r}  {o.size_human()}")
             print()
+
+    elif args.command == "cp":
+        src_bucket, src_key = _parse_path(args.source)
+        dst_bucket, dst_key = _parse_path(args.destination)
+
+        if args.recursive:
+            # Copy all objects under a prefix
+            copied = explorer.copy_prefix(src_bucket, src_key, dst_bucket, dst_key)
+            if args.json:
+                print(json.dumps({"copied": copied, "count": len(copied)}))
+            else:
+                print(f"\n  Copied {len(copied)} object(s):\n")
+                for key in copied:
+                    print(f"  ✓ {key}")
+                print()
+        else:
+            # Copy a single object
+            explorer.copy(src_bucket, src_key, dst_bucket, dst_key)
+            if args.json:
+                print(json.dumps({
+                    "source": f"s3://{src_bucket}/{src_key}",
+                    "destination": f"s3://{dst_bucket}/{dst_key}",
+                }))
+            else:
+                print(f"\n  Copied: s3://{src_bucket}/{src_key} -> s3://{dst_bucket}/{dst_key}\n")
 
 
 if __name__ == "__main__":
