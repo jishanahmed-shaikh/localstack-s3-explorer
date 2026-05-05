@@ -253,13 +253,17 @@ class LocalS3Client:
         dst_key:
             Destination object key.
         """
-        data = self.download_object(src_bucket, src_key)
-        # Ensure destination bucket exists
         try:
-            self._client.head_object(Bucket=dst_bucket, Key=dst_key)
-        except Exception:
-            pass  # Bucket might not exist, but put_object will create it
-        self._client.put_object(Bucket=dst_bucket, Key=dst_key, Body=data)
+            self._client.copy_object(
+                Bucket=dst_bucket,
+                Key=dst_key,
+                CopySource={"Bucket": src_bucket, "Key": src_key},
+                MetadataDirective="COPY",
+            )
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to copy s3://{src_bucket}/{src_key} to s3://{dst_bucket}/{dst_key}: {exc}"
+            ) from exc
 
 
 # ---------------------------------------------------------------------------
